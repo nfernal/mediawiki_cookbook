@@ -1,33 +1,52 @@
 ---
-driver:
-  name: vagrant
-
-## The forwarded_port port feature lets you connect to ports on the VM guest via
-## localhost on the host.
-## see also: https://docs.vagrantup.com/v2/networking/forwarded_ports.html
-
-#  network:
-#    - ["forwarded_port", {guest: 80, host: 8080}]
-
 provisioner:
-  name: policyfile_zero
+  name: chef_zero
+  data_bags_path: <%= ENV['DATA_BAGS_PATH'] %>
+  encrypted_data_bag_secret_key_path: <%= ENV['DATA_BAG_SECRET_PATH'] %>
+  require_chef_omnibus: 12.13.37
 
-## require_chef_omnibus specifies a specific chef version to install. You can
-## also set this to `true` to always use the latest version.
-## see also: https://docs.chef.io/config_yml_kitchen.html
+driver:
+  name: ec2
+  security_group_ids:
+    - sg-9ca1a7e6
+  region: <%= ENV['AWS_REGION'] %>
+  aws_ssh_key_id: <%= ENV['AWS_SSH_KEY_ID']%>
+  availability_zone: <%= ENV['AWS_AVAILABILITY_ZONE='] %>
+  vpc_mode: true
+  vpc: vpc-4251db24
+  subnet_id: subnet-8d18e3c5
+  associate_public_ip: true
+  
+platforms:
+  - name: CentOS_69
+    driver:
+      image_id: ami-a7d82edf
+      instance_type: t2.medium
+      associate_public_ip: true
+      iam_profile_name: main_infra
+      block_device_mappings:
+      - device_name: /dev/sda1
+        ebs:
+          volume_size: 8
+          delete_on_termination: true
+      tags:
+        Name: maduro-mediawiki-tk
+        Product: maduro.nfernal
+        ChargeCode: thisiscostingmeafortune
 
-#  require_chef_omnibus: 12.8.1
+transport:
+  name: ssh
+  connection_timeout: 15
+  connection_retries: 30
+  ssh_key: <%= ENV['AWS_SSH_KEY'] %>
+  username: centos
 
 verifier:
   name: inspec
-
-platforms:
-  - name: ubuntu-16.04
-  - name: centos-7.3
+  inspec_tests:
+        - test/integration/default
 
 suites:
-  - name: default
-    verifier:
-      inspec_tests:
-        - test/smoke/default
-    attributes:
+  - name: mediawiki
+    provisioner:
+      named_run_list: mediawiki

@@ -24,3 +24,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+group node['nginx']['group'].to_s do
+  action :create
+  gid 1337
+end
+
+user node['nginx']['user'].to_s do
+  action :create
+  comment 'nginx & php-fpm user'
+  uid 1337
+  gid node['nginx']['group'].to_s
+end
